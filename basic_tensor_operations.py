@@ -16,4 +16,11 @@ x = tf.constant([[1.,2.,3.,
 print(x) #--------------------> Variable to return.
 print(x.shape) #--------------> Shape of tensor.
 print(x.dtype) #--------------> Type of variable.
-#==================================================
+#=================================================
+# Multiplication (Math operations)
+print(5 * x)
+
+#=================================================
+# Transpose variable
+print(tf.transpose(x))
+print(x @ tf.transpose(x))  #-----> Multiply each element & sum all.
