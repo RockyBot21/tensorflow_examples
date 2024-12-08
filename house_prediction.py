@@ -37,7 +37,7 @@ class Excel:
 
 class Data:
     @staticmethod
-    def split_data(data_input:Any=None):
+    def split_data(data_input:Any=None) -> Any:
         """
         Split data to train & test.
         
@@ -45,13 +45,10 @@ class Data:
                 - data_input (Any) : Data input for train and est the model.
 
             * Returns:
-                - 
+                -            (Any | Dataframe) : Text & train data.
         """        
-        if not data_input.empty:       
-            X_train, X_test, y_train, y_test = train_test_split(data_input, random_state=0)
-            return X_train, X_test, y_train, y_test
-        else:
-            return None, None, None, None
+        X, y = train_test_split(data_input, random_state=42, shuffle=True)
+        return X, y
 
 
 class RNN:
@@ -78,10 +75,19 @@ class PricePredict(Excel, RNN, Data):
         print(f"{df.head}\n")
         print(f"{df.info()}\n")
 
-        # Split data
-        X_train, X_test, y_train, y_test = Data.split_data(data_input = df)
-        
-        print(True)        
+        # Split data (First time)
+        if not df.empty:
+            X, y = Data.split_data(data_input = df)
+            
+            # Remove price column (Column to predict)
+            X.pop("price")
+                
+            X_train, X_test = Data.split_data(data_input = X)
+            y_train, y_test = Data.split_data(data_input = y)
+    
+            # Clear values (Free memory)
+            X, y = None, None
+            print(True)
         
 Obj = PricePredict(excel_file_path="./data_house_prediction.csv")
 Obj.main()
