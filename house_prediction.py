@@ -52,9 +52,20 @@ class Data:
 
 
 class RNN:
-    def __init__(self):
-        pass
+    def __init__(self, input_shape):
+        self.model = tf.keras.Sequential([
+                            tf.keras.layers.Dense(64, activation='relu', input_shape=(input_shape,)),
+                            tf.keras.layers.Dense(32, activation='relu'),
+                            tf.keras.layers.Dense(1)
+                        ])
+        self.model.compile(optimizer='adam', loss='mean_squared_error')
+                
+    def train(self, X_train, y_train, epochs, batch_size):
+            self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
         
+    def evaluate(self, X_test, y_test):
+        return self.model.evaluate(X_test, y_test)
+    
         
 class PricePredict(Excel, RNN, Data):
     def __init__(self, excel_file_path:pd.DataFrame|None = None):
@@ -84,6 +95,12 @@ class PricePredict(Excel, RNN, Data):
                 
             X_train, X_test = Data.split_data(data_input = X)
             y_train, y_test = Data.split_data(data_input = y)
+    
+            exe_model = RNN(input_shape=X_train.shape[1])
+            exe_model.train(X_train=X_train, y_train=y_train, epochs=100, batch_size=8)
+    
+            loss = exe_model(X_test, y_test)
+            print(f'* {loss=}')
     
             # Clear values (Free memory)
             X, y = None, None
