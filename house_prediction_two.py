@@ -6,6 +6,7 @@ Created on Thu Dec 19 21:00:10 2024
 """
 from sklearn.model_selection import train_test_split
 from typing import Any, NoReturn
+from datetime import datetime
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -41,7 +42,7 @@ class Excel:
 
 class Data:
     @staticmethod
-    def split_data(data_input: pd.DataFrame, target_col: str):
+    def split_data(data_input: pd.DataFrame, target_col: str) -> Any:
         """
         Split data into features and target for training and testing.
 
@@ -111,14 +112,18 @@ class PricePredict:
         """
         Execute code to make house price predictions.
         """
+        #try:
         excel_handler = Excel(self.excel_file_path)
         df = excel_handler.read_file()
 
         # Handle the 'date' column
         if 'date' in df.columns:
-            # Convert to timestamp or extract features
-            df['date'] = pd.to_datetime(df['date'], errors='coerce').astype('int64') / 1e9
+            # Convert entire column to datetime format
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
 
+            # Convert to timestamp or extract features
+            # df['date'] = pd.to_datetime(df['date'], errors='coerce').astype('int64') / 1e9
+        
         print(f"Columns: {df.columns}")
         print(f"First rows:\n{df.head()}")
         print(f"Info:\n{df.info()}")
@@ -139,6 +144,9 @@ class PricePredict:
         print(f"Loss: {loss}")
 
         print("Execution completed successfully.")
+
+        #except Exception as e:
+        #    print(f'Error: {e}. Check model & predictions something goes wrong.')
 
 
 if __name__ == "__main__":
