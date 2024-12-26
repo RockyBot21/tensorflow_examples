@@ -4,6 +4,8 @@ Created on Thu Dec 19 21:00:10 2024
 
 @author: Arturo
 """
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split
 from typing import Any, NoReturn
 from datetime import datetime
@@ -62,7 +64,7 @@ class Data:
         return X_train, X_test, y_train, y_test
 
 
-class DenseModel:
+class RNN:
     def __init__(self, input_shape):
         """
         Initialize a simple dense neural network.
@@ -118,11 +120,25 @@ class PricePredict:
 
         # Handle the 'date' column
         if 'date' in df.columns:
+            #Get current date
+            current_date = datetime.now()
+            
             # Convert entire column to datetime format
-            df['date'] = pd.to_datetime(df['date'], errors='coerce')
-
+            #df['date'] = pd.to_datetime(df['date'], errors='coerce')
+            df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S')
+            df['diference_date'] = (current_date - df['date'])
+            df['diference_date'] = df['diference_date'].apply(lambda x: x.days)
             # Convert to timestamp or extract features
             # df['date'] = pd.to_datetime(df['date'], errors='coerce').astype('int64') / 1e9
+        
+            # Intanciate the object for to tokenize 
+            tokenizer = Tokenizer()
+            
+            # Create vocabulary
+            tokenizer.fit_on_texts(df['country'])
+            
+            # Convert to sequences
+            sequeces = tokenizer.texts_to_sequences(df['country'])
         
         print(f"Columns: {df.columns}")
         print(f"First rows:\n{df.head()}")
@@ -136,7 +152,7 @@ class PricePredict:
         X_train, X_test, y_train, y_test = Data.split_data(data_input=df, target_col=target_col)
 
         # Initialize and train the model
-        model = DenseModel(input_shape=X_train.shape[1])
+        model = RNN(input_shape=X_train.shape[1])
         model.train(X_train=X_train, y_train=y_train, epochs=100, batch_size=8)
 
         # Evaluate the model
