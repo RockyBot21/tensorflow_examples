@@ -73,11 +73,11 @@ class RNN:
             - input_shape (int): Number of input features.
         """
         self.model = tf.keras.Sequential([
-                        tf.keras.Input(shape=(input_shape,)),
-                        tf.keras.layers.Dense(64, activation='relu'),
-                        tf.keras.layers.Dense(32, activation='relu'),
-                        tf.keras.layers.Dense(1)
-        ])
+                            tf.keras.Input(shape=(input_shape,)),
+                            tf.keras.layers.Dense(64, activation='relu'),
+                            tf.keras.layers.Dense(32, activation='relu'),
+                            tf.keras.layers.Dense(1)
+                    ])
         self.model.compile(optimizer='adam', loss='mean_squared_error')
 
     def train(self, X_train, y_train, epochs, batch_size):
@@ -135,10 +135,12 @@ class PricePredict:
             tokenizer = Tokenizer()
             
             # Create vocabulary
-            tokenizer.fit_on_texts(df['country'])
+            #tokenizer.fit_on_texts(df['country'])
+            tokenizer.fit_on_texts(df['street'])
             
             # Convert to sequences
-            sequeces = tokenizer.texts_to_sequences(df['country'])
+            #sequeces = tokenizer.texts_to_sequences(df['country'])
+            sequeces = tokenizer.texts_to_sequences(df['street'])
         
         print(f"Columns: {df.columns}")
         print(f"First rows:\n{df.head()}")
@@ -168,3 +170,4 @@ class PricePredict:
 if __name__ == "__main__":
     predictor = PricePredict(excel_file_path="./data_house_prediction.csv")
     predictor.main()
+    
