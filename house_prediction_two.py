@@ -12,7 +12,7 @@ from datetime import datetime
 import tensorflow as tf
 import pandas as pd
 import numpy as np
-import os
+import os, json
 
 TF_ENABLE_ONEDNN_OPTS = 1
 
@@ -137,10 +137,31 @@ class PricePredict:
             # Create vocabulary
             #tokenizer.fit_on_texts(df['country'])
             tokenizer.fit_on_texts(df['street'])
+            #print('Get all words has been tokenized before (Dictionary):  {tokenizer.word_index}')
+        
+            # Create a ".txt" file for all words & index (dictionary).
+            json_obj = json.dumps(tokenizer.word_index, indent=4)
             
+            with open('word_index_dict.json', 'w') as j_file:
+                j_file.write(json_obj)
+   
+            """
+            * Use this method if you want to load json file (Dictionary) is has been tokenizer before
+            from tensorflow.keras.preprocessing.text import tokenizer_from_json
+            
+                - Example:
+                    
+                    with open('word_index_dict.json', 'r') as j_file:
+                        tokenizer_json = j_file.read()
+
+                    tokenizer = tokenizer_from_json(tokenizer_json)
+            """
+        
             # Convert to sequences
             #sequeces = tokenizer.texts_to_sequences(df['country'])
             sequeces = tokenizer.texts_to_sequences(df['street'])
+
+            
         
         print(f"Columns: {df.columns}")
         print(f"First rows:\n{df.head()}")
