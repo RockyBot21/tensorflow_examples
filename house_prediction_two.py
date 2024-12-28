@@ -118,6 +118,9 @@ class PricePredict:
         excel_handler = Excel(self.excel_file_path)
         df = excel_handler.read_file()
 
+        if df.empty:
+            raise ValueError("The input data is empty.")
+
         # Handle the 'date' column
         if 'date' in df.columns:
             #Get current date
@@ -166,20 +169,18 @@ class PricePredict:
         
             # Convert to sequences
             sequences = tokenizer.texts_to_sequences(df_address['Location'])
+            sequences = pad_sequences(sequences)
             
             # Concatenate string text to all dataframe created
             df_combined = tf.concat([df_main, sequences], axis=1)
         
-        print(f"Columns: {df.columns}")
-        print(f"First rows:\n{df.head()}")
-        print(f"Info:\n{df.info()}")
-
-        if df.empty:
-            raise ValueError("The input data is empty.")
+        print(f"Columns: {df_combined.columns}")
+        print(f"First rows:\n{df_combined.head()}")
+        print(f"Info:\n{df_combined.info()}")
 
         # Split data into features and target
         target_col = 'price'
-        X_train, X_test, y_train, y_test = Data.split_data(data_input=df, target_col=target_col)
+        X_train, X_test, y_train, y_test = Data.split_data(data_input=df_combined, target_col=target_col)
 
         # Initialize and train the model
         model = RNN(input_shape=X_train.shape[1])
