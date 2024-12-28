@@ -131,12 +131,19 @@ class PricePredict:
             # Convert to timestamp or extract features
             # df['date'] = pd.to_datetime(df['date'], errors='coerce').astype('int64') / 1e9
         
+            # Join columns that are related to country, city, statezip & street
+            df_address = df[['street', 'city', 'statezip', 'country']]
+            df_address['Location'] =  df['street'] + ' ' + df['city'] + ' ' + df['country'] + ' ' + df['statezip']
+            df_address = df_address.drop(columns=['street', 'city', 'statezip', 'country'])
+            
+            df_main    = df[['price', 'bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors', 'waterfront', 'view',
+                             'condition', 'sqft_above', 'sqft_basement', 'yr_built', 'yr_renovated', 'diference_date']]
+            
             # Intanciate the object for to tokenize 
             tokenizer = Tokenizer()
             
             # Create vocabulary
-            #tokenizer.fit_on_texts(df['country'])
-            tokenizer.fit_on_texts(df['street'])
+            tokenizer.fit_on_texts(df_address['Location'])
             #print('Get all words has been tokenized before (Dictionary):  {tokenizer.word_index}')
         
             # Create a ".txt" file for all words & index (dictionary).
@@ -158,10 +165,10 @@ class PricePredict:
             """
         
             # Convert to sequences
-            #sequeces = tokenizer.texts_to_sequences(df['country'])
-            sequeces = tokenizer.texts_to_sequences(df['street'])
-
+            sequences = tokenizer.texts_to_sequences(df_address['Location'])
             
+            # Concatenate string text to all dataframe created
+            df_combined = tf.concat([df_main, sequences], axis=1)
         
         print(f"Columns: {df.columns}")
         print(f"First rows:\n{df.head()}")
