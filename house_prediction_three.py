@@ -14,6 +14,7 @@ from datetime import datetime
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import os, json
 
 class Data:
     @staticmethod
@@ -66,6 +67,21 @@ class RNN:
     def evaluate(self, X_test, y_test):
         return self.model.evaluate(X_test, y_test)
 
+    def save(self, path):
+        """Guarda el modelo en la ruta especificada."""
+        self.model.save(path)
+
+    def save_tf_format(self, path):
+        self.model.export(path)
+
+    def save_weights(self, path):
+        """Guarda los pesos del modelo en la ruta especificada."""
+        self.model.save_weights(path)
+
+    def summary(self):
+        """Muestra un resumen del modelo."""
+        self.model.summary()
+
 class PricePredict:
     def __init__(self, excel_file_path: str):
         self.excel_file_path = excel_file_path
@@ -110,8 +126,18 @@ class PricePredict:
         model = RNN(input_shape=X_train.shape[1])
         model.train(X_train=X_train, y_train=y_train, epochs=100, batch_size=8)
 
+        model.summary()
+        
         # Evaluate the model
         loss = model.evaluate(X_test=X_test, y_test=y_test)
+
+        # Save model
+        os.makedirs('rnn_model', exist_ok=True)
+        model.save_tf_format('rnn_model/price_house_prediction')
+        #model.save('rnn_model/price_house_prediction.keras')
+        
+        os.makedirs('weights_model', exist_ok=True)
+        model.save_weights('weights_model/.weights.h5')
 
         # Denormalize predictions for final metrics
         predictions = model.model.predict(X_test)
