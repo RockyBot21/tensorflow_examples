@@ -4,6 +4,7 @@ Created on Thu Dec 19 21:00:10 2024
 
 @author: Arturo
 """
+from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from sklearn.model_selection import train_test_split
@@ -62,7 +63,7 @@ class Data:
         y = data_input[target_col]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
         return X_train, X_test, y_train, y_test
-
+    
 
 class RNN:
     def __init__(self, input_shape):
@@ -72,13 +73,33 @@ class RNN:
         * Arguments:
             - input_shape (int): Number of input features.
         """
+        
+        # Define the learning rate scheduler
+        lr_schedule = ExponentialDecay(
+            initial_learning_rate=0.001,
+            decay_steps=1000,
+            decay_rate=0.9,
+            staircase=True
+        )
+        
         self.model = tf.keras.Sequential([
-                            tf.keras.Input(shape=(input_shape,)),
-                            tf.keras.layers.Dense(64, activation='relu'),
-                            tf.keras.layers.Dense(32, activation='relu'),
-                            tf.keras.layers.Dense(1)
-                    ])
-        self.model.compile(optimizer='adam', loss='mean_squared_error')
+                        tf.keras.Input(shape=(input_shape,)),
+                        tf.keras.layers.Dense(128, activation='relu'),
+                        tf.keras.layers.Dropout(0.2),
+                        tf.keras.layers.Dense(64, activation='relu'),
+                        tf.keras.layers.Dropout(0.2),
+                        tf.keras.layers.Dense(1, activation='linear')
+                ])
+        
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=lr_schedule),
+            loss='mean_squared_error',
+            metrics=[
+                'mean_absolute_error',
+                tf.keras.metrics.RootMeanSquaredError(),
+                'accuracy'
+            ]
+        )
 
     def train(self, X_train, y_train, epochs, batch_size):
         """
@@ -104,7 +125,7 @@ class RNN:
             - Loss value.
         """
         return self.model.evaluate(X_test, y_test)
-
+    
 
 class PricePredict:
     def __init__(self, excel_file_path: str):
@@ -172,11 +193,12 @@ class PricePredict:
             sequences = pad_sequences(sequences)
             
             # Concatenate string text to all dataframe created
-            df_combined = tf.concat([df_main, sequences], axis=1)
-        
-        print(f"Columns: {df_combined.columns}")
-        print(f"First rows:\n{df_combined.head()}")
-        print(f"Info:\n{df_combined.info()}")
+            #df_combined = tf.concat([df_main, sequences], axis=1)
+            df_combined = pd.concat([df_main, pd.DataFrame(sequences, index=df_main.index)], axis=1)
+
+        print(f"Columns: {df.columns}")
+        print(f"First rows:\n{df.head()}")
+        print(f"Info:\n{df.info()}")
 
         # Split data into features and target
         target_col = 'price'
@@ -189,8 +211,13 @@ class PricePredict:
         # Evaluate the model
         loss = model.evaluate(X_test=X_test, y_test=y_test)
         print(f"Loss: {loss}")
-
         print("Execution completed successfully.")
+
+        # Save model with file format ".h5" this method save the entire model
+        model.save("price_house_prediction.h5")
+
+        # Save model with only weights.
+        model.save_weights('rnn_weights/price_house_prediction.h5')
 
         #except Exception as e:
         #    print(f'Error: {e}. Check model & predictions something goes wrong.')
