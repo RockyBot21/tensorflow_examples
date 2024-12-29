@@ -61,8 +61,35 @@ class RNN:
             metrics=['mean_absolute_error', tf.keras.metrics.RootMeanSquaredError()]
         )
 
-    def train(self, X_train, y_train, epochs, batch_size):
-        self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+    def train(self, X_train, y_train, X_test, y_test, epochs, batch_size):
+        # Define directories for logs and checkpoints
+        log_dir = './logs'
+        checkpoint_dir = './checkpoints'
+
+        # Tensorboard callback
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir)
+
+        checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=os.path.join(checkpoint_dir, 'best_model.keras'),
+            save_best_only=True,
+            monitor='val_loss',
+            mode='min',
+            verbose=1
+        )
+
+        # Create an EarlyStopping callback (Stops the trainig if dosen't improve in 5 epoch)        
+        early_stopping_callback = tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=3,  # Stops training if val_loss doesn't improve for 3 epochs
+            verbose=1
+        )
+
+        self.model.fit(X_train, y_train, 
+                       epochs     = epochs,            
+                       batch_size = batch_size,
+                       validation_data = (X_test, y_test),
+                       callbacks  = [tensorboard_callback, checkpoint_callback, early_stopping_callback]
+                )
 
     def evaluate(self, X_test, y_test):
         return self.model.evaluate(X_test, y_test)
@@ -124,7 +151,7 @@ class PricePredict:
 
         # Train the model
         model = RNN(input_shape=X_train.shape[1])
-        model.train(X_train=X_train, y_train=y_train, epochs=100, batch_size=8)
+        model.train(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test, epochs=100, batch_size=8)
 
         model.summary()
         
@@ -152,3 +179,13 @@ class PricePredict:
 if __name__ == "__main__":
     predictor = PricePredict(excel_file_path="data_house_prediction.csv")
     predictor.main()
+
+"""
+Execute that command for to see the board of model (Where is the project)
+    tensorboard --logdir logs/fit
+"""
+
+"""
+Open the port
+    http://localhost:6006/
+"""
