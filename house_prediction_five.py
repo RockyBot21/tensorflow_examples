@@ -15,27 +15,62 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime
+from typing import Any
 import tensorflow as tf
 import pandas as pd
 import numpy as np
 import os, json
 
+TF_ENABLE_ONEDNN_OPTS=1
+
 class Data:
     @staticmethod
     def normalize_data(df: pd.DataFrame, target_col: str, exclude_cols: list) -> pd.DataFrame:
+        """
+        Normalize data of the several columns in dataframe.
+            
+            * Arguments:
+                - df          (pd.DataFrame) : Table where is the data.
+                - target_col           (str) : Column name.
+                - exclude_cols   (list[str]) : List of columns.
+
+            * Returns:
+                - df          (pd.DataFrame) : Table where is the data.
+        """
         scaler = MinMaxScaler()
         columns_to_scale = [col for col in df.columns if col not in exclude_cols and col != target_col]
         df[columns_to_scale] = scaler.fit_transform(df[columns_to_scale])
         return df
 
     @staticmethod
-    def normalize_target(df: pd.DataFrame, target_col: str):
+    def normalize_target(df: pd.DataFrame, target_col: str) -> pd.DataFrame and Any:
+        """
+        Normalize data in specific column of dataframe.
+            
+            * Arguments:
+                - df          (pd.DataFrame) : Table where is the data.
+                - target_col           (str) : Column name.
+
+            * Returns:
+                - df          (pd.DataFrame) : Table where is the data.
+                - scaler               (Any) : MinMaxScaler variable.
+        """
         scaler = MinMaxScaler()
         df[target_col] = scaler.fit_transform(df[[target_col]])
         return df, scaler
 
     @staticmethod
-    def split_data(data_input: pd.DataFrame, target_col: str):
+    def split_data(data_input: pd.DataFrame, target_col: str) -> Any:
+        """
+        Split data in several data sets (Train & test).
+            
+            * Arguments:                
+                - data_input   (pd.DataFrame) : Table where is the data.
+                - target_col            (str) : Column name.
+        
+            * Returns:
+                -                       (Any) : Dataframe train & test.
+        """        
         X = data_input.drop(columns=[target_col])
         y = data_input[target_col]
         return train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)

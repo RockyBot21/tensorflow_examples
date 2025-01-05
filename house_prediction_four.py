@@ -11,31 +11,66 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime
+from typing import Any
 import tensorflow as tf
 import pandas as pd
 import numpy as np
 
+TF_ENABLE_ONEDNN_OPTS=1
+
 class Data:
     @staticmethod
-    def normalize_data(df: pd.DataFrame, target_col: str, exclude_cols: list) -> pd.DataFrame:
+    def normalize_data_in_columns(df:pd.DataFrame, target_col:str, exclude_cols:list) -> pd.DataFrame:
+        """
+        Normalize data of the several columns in dataframe.
+            
+            * Arguments:
+                - df          (pd.DataFrame) : Table where is the data.
+                - target_col           (str) : Column name.
+                - exclude_cols   (list[str]) : List of columns.
+
+            * Returns:
+                - df          (pd.DataFrame) : Table where is the data.
+        """
         scaler = MinMaxScaler()
         columns_to_scale = [col for col in df.columns if col not in exclude_cols and col != target_col]
         df[columns_to_scale] = scaler.fit_transform(df[columns_to_scale])
         return df
 
     @staticmethod
-    def normalize_target(df: pd.DataFrame, target_col: str):
+    def normalize_data_one_col(df:pd.DataFrame, target_col:str) -> pd.DataFrame and Any:
+        """
+        Normalize data in specific column of dataframe.
+            
+            * Arguments:
+                - df          (pd.DataFrame) : Table where is the data.
+                - target_col           (str) : Column name.
+
+            * Returns:
+                - df          (pd.DataFrame) : Table where is the data.
+                - scaler               (Any) : MinMaxScaler variable.
+        """
         scaler = MinMaxScaler()
         df[target_col] = scaler.fit_transform(df[[target_col]])
         return df, scaler
 
     @staticmethod
-    def split_data(data_input: pd.DataFrame, target_col: str):
+    def split_data(data_input: pd.DataFrame, target_col: str) -> Any:
+        """
+        Split data in several data sets (Train & test).
+            
+            * Arguments:                
+                - data_input   (pd.DataFrame) : Table where is the data.
+                - target_col            (str) : Column name.
+        
+            * Returns:
+                -                       (Any) : Dataframe train & test.
+        """
         X = data_input.drop(columns=[target_col])
         y = data_input[target_col]
         return train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
 
-class RNNWithEmbedding:
+class RnnEmbedding:
     def __init__(self, embedding_input_shape, numeric_input_shape, vocab_size):
         lr_schedule = ExponentialDecay(
             initial_learning_rate=0.0005,  # Reduced learning rate
@@ -72,9 +107,11 @@ class RNNWithEmbedding:
         )
 
     def train(self, X_train_embeddings, X_train_numeric, y_train, epochs, batch_size):
+        """ Train the model """
         self.model.fit([X_train_embeddings, X_train_numeric], y_train, epochs=epochs, batch_size=batch_size)
 
     def evaluate(self, X_test_embeddings, X_test_numeric, y_test):
+        """ Check accuracy of the model """
         return self.model.evaluate([X_test_embeddings, X_test_numeric], y_test)
 
 class PricePredictWithEmbedding:
@@ -111,8 +148,8 @@ class PricePredictWithEmbedding:
         df_combined.columns = df_combined.columns.astype(str)
 
         # Normalize target and features
-        df_combined, target_scaler = Data.normalize_target(df_combined, target_col='price')
-        df_combined = Data.normalize_data(df_combined, target_col='price', exclude_cols=[str(i) for i in range(sequences.shape[1])])
+        df_combined, target_scaler = Data.normalize_data_one_col(df_combined, target_col='price')
+        df_combined = Data.normalize_data_in_columns(df_combined, target_col='price', exclude_cols=[str(i) for i in range(sequences.shape[1])])
 
         # Split data
         X_train, X_test, y_train, y_test = Data.split_data(df_combined, target_col='price')
@@ -125,7 +162,7 @@ class PricePredictWithEmbedding:
         X_test_numeric = X_test.iloc[:, :-num_embedding_cols].values
 
         # Train the model with embedding
-        model = RNNWithEmbedding(
+        model = RnnEmbedding(
             embedding_input_shape=(num_embedding_cols,),
             numeric_input_shape=(X_train_numeric.shape[1],),
             vocab_size=len(tokenizer.word_index) + 1
@@ -148,3 +185,13 @@ class PricePredictWithEmbedding:
 if __name__ == "__main__":
     predictor = PricePredictWithEmbedding(excel_file_path="data_house_prediction.csv")
     predictor.main()
+
+"""
+Execute that command for to see the board of model (Where is the project)
+    tensorboard --logdir logs/fit
+"""
+
+"""
+Open the port
+    http://localhost:6006/
+"""

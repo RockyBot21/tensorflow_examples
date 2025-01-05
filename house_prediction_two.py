@@ -222,7 +222,6 @@ class PricePredict:
         #except Exception as e:
         #    print(f'Error: {e}. Check model & predictions something goes wrong.')
 
-
 if __name__ == "__main__":
     predictor = PricePredict(excel_file_path="./data_house_prediction.csv")
     predictor.main()
