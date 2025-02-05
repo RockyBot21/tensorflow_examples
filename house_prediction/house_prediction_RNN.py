@@ -116,6 +116,20 @@ class PricePredict:
         if df.empty:
             raise ValueError("The input data is empty.")
 
+        # Add filter for to remove empty or no common values
+        df['price'] = df['price'].apply(lambda x: float(f"{x:e}")) 
+        df = df[df['price'] != 0]
+        
+        # Check he segmen of each house (Analysis)
+        # max value
+        print(f"* Max price: {max(df['price'].to_list())}")
+
+        # min value
+        print(f"* Min price: {min(df['price'].to_list())}")
+
+        # average prices
+        print(f"* Average prices: {round((sum((df['price'].to_list()))/len((df['price'].to_list()))), 0)}")
+
         # Process date column
         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S')
         current_date = datetime.now()
