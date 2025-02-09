@@ -130,6 +130,9 @@ class PricePredict:
         # average prices
         print(f"* Average prices: {round((sum((df['price'].to_list()))/len((df['price'].to_list()))), 0)}")
 
+        # add type of segments in each case of houses 
+        df['segments'] = df['price'].apply(lambda x: 'low' if (x > 0) and (x < 600000) else 'medium' if (x > 600000) and (x < 1200000) else 'top')
+
         # Process date column
         df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S')
         current_date = datetime.now()
@@ -137,7 +140,7 @@ class PricePredict:
 
         # Tokenize address data
         df_address = df[['street', 'city', 'statezip', 'country']]
-        df_address['Location'] = df['street'] + ' ' + df['city'] + ' ' + df['country'] + ' ' + df['statezip']
+        df_address['Location'] = df['street'] + ' ' + df['city'] + ' ' + df['country'] + ' ' + df['statezip'] + ' ' + df['segments']
         df_address = df_address.drop(columns=['street', 'city', 'statezip', 'country'])
 
         df_main = df[['price', 'bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors', 'waterfront', 'view',
@@ -152,16 +155,16 @@ class PricePredict:
         with open('word_index_dict.json', 'w') as j_file:
             j_file.write(json_obj)
 
-        sequences = tokenizer.texts_to_sequences(df_address['Location'])
-        sequences = pad_sequences(sequences)
+        seq_location = tokenizer.texts_to_sequences(df_address['Location'])
+        seq_location = pad_sequences(seq_location)
 
         # Combine main data and tokenized sequences
-        df_combined = pd.concat([df_main, pd.DataFrame(sequences, index=df_main.index)], axis=1)
+        df_combined = pd.concat([df_main, pd.DataFrame(seq_location, index=df_main.index)], axis=1)
         df_combined.columns = df_combined.columns.astype(str)
 
         # Normalize target and features
         df_combined, target_scaler = Data.normalize_target(df_combined, target_col='price')
-        df_combined = Data.normalize_data(df_combined, target_col='price', exclude_cols=[str(i) for i in range(sequences.shape[1])])
+        df_combined = Data.normalize_data(df_combined, target_col='price', exclude_cols=[str(i) for i in range(seq_location.shape[1])])
 
         # Split data
         X_train, X_test, y_train, y_test = Data.split_data(df_combined, target_col='price')
