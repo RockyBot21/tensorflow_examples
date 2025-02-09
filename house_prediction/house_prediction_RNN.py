@@ -78,6 +78,8 @@ class Data:
 class RNN(Model):
     def __init__(self, input_shape, initial_lr=0.0005):
         super(RNN, self).__init__()
+        self.dense = Dense(512, activation='relu')
+        self.dropout = Dropout(0.3)
         self.dense1 = Dense(256, activation='relu')
         self.dropout1 = Dropout(0.3)
         self.dense2 = Dense(128, activation='relu')
@@ -99,7 +101,9 @@ class RNN(Model):
         )
 
     def call(self, inputs):
-        x = self.dense1(inputs)
+        x = self.dense(inputs)
+        x = self.dropout(x)        
+        x = self.dense1(x)
         x = self.dropout1(x)
         x = self.dense2(x)
         x = self.dropout2(x)
@@ -139,14 +143,16 @@ class PricePredict:
         df['diference_date'] = df['date'].apply(lambda x: (current_date - x).days)
 
         # Tokenize address data
-        df_address = df[['street', 'city', 'statezip', 'country']]
+        df_address = df[['street', 'city', 'statezip', 'country', 'segments']]
         df_address['Location'] = df['street'] + ' ' + df['city'] + ' ' + df['country'] + ' ' + df['statezip'] + ' ' + df['segments']
-        df_address = df_address.drop(columns=['street', 'city', 'statezip', 'country'])
+        df_address = df_address.drop(columns=['street', 'city', 'statezip', 'country', 'segments'])
 
         df_main = df[['price', 'bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors', 'waterfront', 'view',
                       'condition', 'sqft_above', 'sqft_basement', 'yr_built', 'yr_renovated', 'diference_date']]
 
         tokenizer = Tokenizer()
+
+        # Tokenize location
         tokenizer.fit_on_texts(df_address['Location'])
 
         # Create a ".txt" file for all words & index (dictionary).
@@ -155,16 +161,16 @@ class PricePredict:
         with open('word_index_dict.json', 'w') as j_file:
             j_file.write(json_obj)
 
-        seq_location = tokenizer.texts_to_sequences(df_address['Location'])
-        seq_location = pad_sequences(seq_location)
+        seq_location_and_seg = tokenizer.texts_to_sequences(df_address['Location'])
+        seq_location_and_seg = pad_sequences(seq_location_and_seg)
 
         # Combine main data and tokenized sequences
-        df_combined = pd.concat([df_main, pd.DataFrame(seq_location, index=df_main.index)], axis=1)
+        df_combined = pd.concat([df_main, pd.DataFrame(seq_location_and_seg, index=df_main.index)], axis=1)
         df_combined.columns = df_combined.columns.astype(str)
 
         # Normalize target and features
         df_combined, target_scaler = Data.normalize_target(df_combined, target_col='price')
-        df_combined = Data.normalize_data(df_combined, target_col='price', exclude_cols=[str(i) for i in range(seq_location.shape[1])])
+        df_combined = Data.normalize_data(df_combined, target_col='price', exclude_cols=[str(i) for i in range(seq_location_and_seg.shape[1])])
 
         # Split data
         X_train, X_test, y_train, y_test = Data.split_data(df_combined, target_col='price')
@@ -192,7 +198,7 @@ class PricePredict:
                 # Detener temprano si no mejora
                 tf.keras.callbacks.EarlyStopping(
                     monitor='val_loss',
-                    patience=3,
+                    patience=5,
                     verbose=1
                 ),
 
