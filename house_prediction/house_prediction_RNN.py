@@ -76,15 +76,20 @@ class Data:
         return train_test_split(X, y, test_size=0.2, random_state=42, shuffle=True)
 
 class RNN(Model):
-    def __init__(self, input_shape, initial_lr=0.0005):
+    def __init__(self, input_shape:pd.DataFrame, initial_lr:int =0.0005):
+        """
+        * Attributes:
+            - input_shape       (Dataframe) : Input data for to train the model.
+            - initial_lr  (optional -  int) : Learning rate of neuralnetwork (The default is 0.0005).
+        """
         super(RNN, self).__init__()
-        self.dense = Dense(512, activation='relu')
-        self.dropout = Dropout(0.3)
-        self.dense1 = Dense(256, activation='relu')
+        self.dense    = Dense(512, activation='relu')
+        self.dropout  = Dropout(0.3)
+        self.dense1   = Dense(256, activation='relu')
         self.dropout1 = Dropout(0.3)
-        self.dense2 = Dense(128, activation='relu')
+        self.dense2   = Dense(128, activation='relu')
         self.dropout2 = Dropout(0.3)
-        self.dense3 = Dense(64, activation='relu')
+        self.dense3   = Dense(64, activation='relu')
         self.output_layer = Dense(1, activation='linear')
 
         self.lr_schedule = ExponentialDecay(
@@ -112,10 +117,14 @@ class RNN(Model):
 
 class PricePredict:
     def __init__(self, excel_file_path: str):
+        """
+        * Attributes:
+            excel_file_path  (str) : Path of the input file (Dyrectory).
+        """
         self.excel_file_path = excel_file_path
 
-    def main(self):
-        df = pd.read_csv(self.excel_file_path)
+    def main(self) -> None:
+        df = pd.read_csv(os.path.join(os.getcwd(), self.excel_file_path))
 
         if df.empty:
             raise ValueError("The input data is empty.")
@@ -125,16 +134,16 @@ class PricePredict:
         df = df[df['price'] != 0]
         
         # Check he segmen of each house (Analysis)
-        # max value
+        # Max value
         print(f"* Max price: {max(df['price'].to_list())}")
 
-        # min value
+        # Min value
         print(f"* Min price: {min(df['price'].to_list())}")
 
-        # average prices
+        # Average prices
         print(f"* Average prices: {round((sum((df['price'].to_list()))/len((df['price'].to_list()))), 0)}")
 
-        # add type of segments in each case of houses 
+        # Add type of segments in each case of houses 
         df['segments'] = df['price'].apply(lambda x: 'low' if (x > 0) and (x < 600000) else 'medium' if (x > 600000) and (x < 1200000) else 'top')
 
         # Process date column
@@ -183,10 +192,10 @@ class PricePredict:
             epochs=100, 
             batch_size=8,
             callbacks=[
-                # Registro en TensorBoard
+                # Create register in TensorBoard
                 tf.keras.callbacks.TensorBoard(log_dir='./logs'),
 
-                # Guardar el mejor modelo
+                # Save the best model in path
                 tf.keras.callbacks.ModelCheckpoint(
                     filepath='./checkpoints/best_model.keras',
                     save_best_only=True,
@@ -195,14 +204,14 @@ class PricePredict:
                     verbose=1
                 ),
 
-                # Detener temprano si no mejora
+                # Stop training model if not improbe in specific case
                 tf.keras.callbacks.EarlyStopping(
                     monitor='val_loss',
                     patience=5,
                     verbose=1
                 ),
 
-                # Guardar logs del entrenamiento
+                # Save logs of training
                 CSVLogger('training_log.csv', separator=',', append=False)
             ]
         )
@@ -222,9 +231,9 @@ class PricePredict:
         # Denormalize predictions for final metrics
         predictions = model.predict(X_test)
         predictions = target_scaler.inverse_transform(predictions)
-        y_test = target_scaler.inverse_transform(y_test.values.reshape(-1, 1))
+        y_test      = target_scaler.inverse_transform(y_test.values.reshape(-1, 1))
 
-        mae = mean_absolute_error(y_test, predictions)
+        mae  = mean_absolute_error(y_test, predictions)
         rmse = np.sqrt(mean_squared_error(y_test, predictions))
 
         print(f"MAE: {mae}, RMSE: {rmse}, Loss: {loss}")
