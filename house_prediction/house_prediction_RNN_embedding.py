@@ -8,9 +8,10 @@ from tensorflow.keras.optimizers.schedules import ExponentialDecay
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.callbacks import CSVLogger
+from tensorflow.keras import regularizers
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
 from datetime import datetime
 from typing import Any
@@ -34,7 +35,6 @@ class Data:
             * Returns:
                 - df          (pd.DataFrame) : Table where is the data.
         """
-        #scaler = MinMaxScaler()
         scaler = StandardScaler()
         columns_to_scale = [col for col in df.columns if col not in exclude_cols and col != target_col]
         df[columns_to_scale] = scaler.fit_transform(df[columns_to_scale])
@@ -53,7 +53,6 @@ class Data:
                 - df          (pd.DataFrame) : Table where is the data.
                 - scaler               (Any) : MinMaxScaler variable.
         """
-        #scaler = MinMaxScaler()
         scaler = StandardScaler()
         df[target_col] = scaler.fit_transform(df[[target_col]])
         return df, scaler
@@ -76,46 +75,44 @@ class Data:
 
 class RnnEmbedding:
     def __init__(self, embedding_input_shape, numeric_input_shape, vocab_size):
-        lr_schedule = ExponentialDecay(
-            initial_learning_rate=0.0005,  # Reduced learning rate
-            decay_steps=1000,
-            decay_rate=0.8,
-            staircase=True
-        )
+        # Check if is needed to reduce the learing rate ---> (NOT USED)
+        lr_schedule = ExponentialDecay(initial_learning_rate=0.0005,  # Reduced learning rate
+                                       decay_steps=1000,
+                                       decay_rate=0.8,
+                                       staircase=True
+                                )
 
         # Define the embedding branch
-        embedding_input = tf.keras.layers.Input(shape=embedding_input_shape)
-        embedding_layer = tf.keras.layers.Embedding(input_dim=vocab_size, output_dim=50)(embedding_input)
-        embedding_output = tf.keras.layers.LSTM(128, return_sequences=False)(embedding_layer)
-        #embedding_output = tf.keras.layers.Flatten()(embedding_layer)
-        #embedding_output = tf.keras.layers.GlobalMaxPooling1D()(embedding_layer)        
+        embedding_input   = tf.keras.layers.Input(shape=embedding_input_shape)
+        embedding_layer   = tf.keras.layers.Embedding(input_dim=vocab_size, output_dim=50)(embedding_input)
+        embedding_output  = tf.keras.layers.LSTM(128, return_sequences=False)(embedding_layer)
 
         # Define the numeric branch
         numeric_input = tf.keras.layers.Input(shape=numeric_input_shape)
-        numeric_dense = tf.keras.layers.Dense(64, activation='relu')(numeric_input)
+        numeric_dense = tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(numeric_input)
 
         # Concatenate both branches
         combined = tf.keras.layers.Concatenate()([embedding_output, numeric_dense])
 
         # Add dense layers on top
-        dense       = tf.keras.layers.Dense(512, activation='relu')(combined)
+        dense       = tf.keras.layers.Dense(512, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(combined)
         batch_norm  = tf.keras.layers.BatchNormalization()(dense)
-        dropout     = tf.keras.layers.Dropout(0.1)(batch_norm)
+        dropout     = tf.keras.layers.Dropout(0.2)(batch_norm)
 
-        dense1      = tf.keras.layers.Dense(256, activation='relu')(dropout)
+        dense1      = tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(dropout)
         batch_norm1 = tf.keras.layers.BatchNormalization()(dense1)
         dropout1    = tf.keras.layers.Dropout(0.1)(batch_norm1)
 
-        dense2      = tf.keras.layers.Dense(128, activation='relu')(dropout1)
+        dense2      = tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(dropout1)
         output      = tf.keras.layers.Dense(1, activation='linear')(dense2)
 
-        self.model = tf.keras.Model(inputs=[embedding_input, numeric_input], outputs=output)
+        self.model = tf.keras.Model(inputs  = [embedding_input, numeric_input],
+                                    outputs = output)
 
-        self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005), #lr_schedule),
-            loss='mean_squared_error',
-            metrics=['mean_absolute_error', tf.keras.metrics.RootMeanSquaredError()]
-        )
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005), #lr_schedule),
+                           loss='mean_squared_error',
+                           metrics=['mean_absolute_error', tf.keras.metrics.RootMeanSquaredError()]
+                    )
 
     def train(self, X_train_embeddings, X_train_numeric, y_train, epochs, batch_size):
         """ Train the model """
@@ -214,11 +211,10 @@ class PricePredictWithEmbedding:
         df_combined, target_scaler = Data.normalize_data_one_col(df_combined, target_col='price')
         
         # Normalize features (excluding price and embeddings)
-        df_combined = Data.normalize_data_in_columns(
-            df_combined, 
-            target_col='price', 
-            exclude_cols=[str(i) for i in range(sequences.shape[1])] + ['price']
-        )
+        df_combined = Data.normalize_data_in_columns(df_combined, 
+                                                     target_col   = 'price', 
+                                                     exclude_cols = [str(i) for i in range(sequences.shape[1])] + ['price']
+                                                )
 
         # Split data
         X_train, X_test, y_train, y_test = Data.split_data(df_combined, target_col='price')
@@ -231,17 +227,17 @@ class PricePredictWithEmbedding:
         X_test_numeric     = X_test.iloc[:, :-num_embedding_cols].values
 
         # Train the model with embedding
-        model = RnnEmbedding(
-                     embedding_input_shape = (num_embedding_cols,),
-                     numeric_input_shape   = (X_train_numeric.shape[1],),
-                     vocab_size            = (len(tokenizer.word_index) + 1)
-                )
+        model = RnnEmbedding(embedding_input_shape = (num_embedding_cols,),
+                             numeric_input_shape   = (X_train_numeric.shape[1],),
+                             vocab_size            = (len(tokenizer.word_index) + 1)
+                        )
         
         model.train(X_train_embeddings = X_train_embeddings,
                     X_train_numeric    = X_train_numeric,
                     y_train            = y_train,
-                    epochs             = 70,
-                    batch_size         = 32)
+                    epochs             = 100,
+                    batch_size         = 32
+                )
 
         # Evaluate the model
         loss = model.evaluate(X_test_embeddings=X_test_embeddings, X_test_numeric=X_test_numeric, y_test=y_test)
@@ -251,8 +247,8 @@ class PricePredictWithEmbedding:
         predictions = target_scaler.inverse_transform(predictions)
         y_test = target_scaler.inverse_transform(y_test.values.reshape(-1, 1))
 
-        print("Predictions before inverse transform:", predictions[:5].flatten())
         print("Actual values before inverse transform:", y_test[:5].flatten())
+        print("Predictions before inverse transform:", predictions[:5].flatten())
 
         mae = mean_absolute_error(y_test, predictions)
         rmse = np.sqrt(mean_squared_error(y_test, predictions))
