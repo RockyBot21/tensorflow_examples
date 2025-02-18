@@ -31,16 +31,16 @@
 
 ## Training process and techniques
     
-Use early stopping for to pause the trainig. Example:
-![Early_stopping](imgs/Early_stopping.PNG)<br/>
+<b>Use early stopping for to pause the trainig. Example:</b>
+<br/>![Early_stopping](imgs/Early_stopping.PNG)<br/>
    
-Use embeddings for to improve the training with the relation
-with text and numbers. Example:
-![Early_stopping](imgs/Embedding_results.PNG)<br/>
+<b>Use embeddings for to improve the training with the relation
+with text and numbers. Example:</b>
+<br/>![Early_stopping](imgs/Embedding_results.PNG)<br/>
     
-Using the tokenizer method for the conversion the text to numbers, 
-and process the numbers joining the both dataframes. Example:
-![Early_stopping](imgs/Tokenizer_and_numbers.PNG)<br/>
+<b>Using the tokenizer method for the conversion the text to numbers, 
+and process the numbers joining the both dataframes. Example:</b>
+<br/>![Early_stopping](imgs/Tokenizer_and_numbers.PNG)<br/>
     
     
     
