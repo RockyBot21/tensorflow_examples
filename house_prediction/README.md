@@ -26,7 +26,8 @@
 * **Why you can used or try to replicate this proyect?**
     When i was thinking to replicate this example i'm using techniques like
     stop the model is not learning or improbe with the specific epochs, 
-    save the best model & create a log with the traning.
+    save the best model, create a log with the traning, you can check the 
+    result of the trainig with tensorboard.
 
 
 ## Training process and techniques
@@ -35,10 +36,10 @@
 <br/>![Early_stopping](imgs/Early_stopping.PNG)<br/>
    
 * **Use embeddings for to improve the training with the relation with text and numbers. Example:**
-<br/>![Early_stopping](imgs/Embedding_results.PNG)<br/>
+<br/>![Embedding_results](imgs/Embedding_results.PNG)<br/>
     
 * **Using the tokenizer method for the conversion the text to numbers, and process the numbers joining the both dataframes. Example:**
-<br/>![Early_stopping](imgs/Tokenizer_and_numbers.PNG)<br/>
+<br/>![Tokenizer_and_numbers](imgs/Tokenizer_and_numbers.PNG)<br/>
     
     
     
