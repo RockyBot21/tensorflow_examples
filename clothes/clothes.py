@@ -12,27 +12,35 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 
+# Get dataset 
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
+# Create labels of each clothe in the dataset
 class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
+# Show dimmensions of each image
 train_images.shape
 
+# Numbers of images to train
 len(train_images)
 
+# Number of labels of each clothe
 set(list(train_labels))
 
+# Show aleatori clothe of the dataset
 plt.figure()
 plt.imshow(train_images[2])
 plt.colorbar()
 plt.grid(False)
 plt.show()
 
+# Scale data between 0 and 1
 train_images = train_images / 255.0
 test_images = test_images / 255.0
 
+# Create Convolutional neuronal network
 class CNN(Model):
   def __init__(self, input_shape, learning_rate):
     super(CNN, self).__init__()
@@ -63,7 +71,9 @@ class CNN(Model):
     x = self.dropout_1(x)
     return self.out_layer(x)
 
+# Call CNN
 model = CNN(input_shape=(28, 28), learning_rate=0.001)
+# Train the model add callback for to stop the training
 model.fit(train_images, 
           train_labels, 
           epochs=50,
@@ -93,10 +103,11 @@ model.fit(train_images,
             ]
           )
 
+# Evaluate the results
 test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
-
 print('\nTest accuracy:', test_acc)
 
+# Make predictions
 predictions = model.predict(test_images)
 
 predictions[0]
@@ -105,6 +116,7 @@ np.argmax(predictions[0])
 
 test_labels[0]
 
+# Show 10 pretictions
 def plot_image(i, predictions_array, true_label, img):
   predictions_array, true_label, img = predictions_array, true_label[i], img[i]
   plt.grid(False)
